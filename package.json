@@ -1,0 +1,51 @@
+{
+	"displayName": "modgebot | Nyaarium",
+	"name": "modgebot",
+	"version": "3.0.0",
+	"license": "MIT",
+	"licensesAllowed": [
+		"0BSD",
+		"Apache-2.0",
+		"BSD-2-Clause",
+		"BSD-3-Clause",
+		"CC-BY-3.0",
+		"CC0-1.0",
+		"ISC",
+		"MIT",
+		"WTFPL"
+	],
+	"licensesDenied": [],
+	"scripts": {
+		"====[ Build ]====": "",
+		"dev": "node server.js",
+		"start": "NODE_ENV=production node server.js",
+		"build": "npm run clean && npx next build",
+		"lint": "npx next lint",
+		"patch": "npm --no-git-tag-version version patch",
+		"minor": "npm --no-git-tag-version version minor",
+		"major": "npm --no-git-tag-version version major",
+		"====[ Misc ]====": "",
+		"commit-main": "git push -u origin main:dev && git branch -u origin/main && git reset --hard origin/main # Move new 'main' commits over to new 'dev' branch",
+		"reinstall": "npm run purge && npm i",
+		"update": "npx npm-check-updates -u && npm run reinstall",
+		"clean": "rm -rf .next/",
+		"purge": "rm -rf .next/ node_modules/ package-lock.json"
+	},
+	"dependencies": {
+		"discord.js": "^14.13.0",
+		"json5": "^2.2.3",
+		"lodash": "^4.17.21",
+		"moment": "^2.29.4",
+		"moment-timezone": "^0.5.43",
+		"next": "^13.4.19",
+		"openai": "^4.5.0"
+	},
+	"devDependencies": {
+		"@types/express": "^4.17.17",
+		"@types/lodash": "^4.14.198",
+		"@types/node": "^20.5.9",
+		"eslint": "^8.48.0",
+		"eslint-config-next": "^13.4.19",
+		"eslint-plugin-security": "^1.7.1"
+	}
+}

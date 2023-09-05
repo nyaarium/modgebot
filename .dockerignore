@@ -10,7 +10,7 @@ node_modules/
 volumes/
 .git*
 .env*
-
+compose*.yml
 
 #### OS
 Thumbs.db
