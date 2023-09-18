@@ -1,31 +1,48 @@
 const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
+const path = require("path");
+const fs = require("fs");
+const { default: fetch } = require("node-fetch");
 
 const dev = process.env.NODE_ENV !== "production";
+if (dev) {
+	const dotenv = require("dotenv");
+	dotenv.config();
+}
 
 const port = parseInt(process.env.PORT, 10) || (dev ? 3000 : 80);
 
 const app = next({ dev, hostname: "0.0.0.0", port });
 const handle = app.getRequestHandler();
 
+if (!process.env.DATA_PATH) {
+	throw new Error(`Expected environment variable DATA_PATH`);
+}
+
+function routeHandler(req, res, parsedUrl, next) {
+	const { pathname } = parsedUrl;
+
+	if (!/^\/api\//.test(pathname)) {
+		return res.destroy();
+	} else {
+		return handle(req, res, parsedUrl);
+	}
+}
+
 app.prepare()
 	.then(() => {
-		createServer(async (req, res) => {
+		createServer((req, res) => {
+			const parsedUrl = parse(req.url, true);
 			try {
-				const parsedUrl = parse(req.url, true);
-				const { pathname, query } = parsedUrl;
-
-				if (!/^\/api\//.test(pathname)) {
-					return res.destroy();
-				} else {
-					await handle(req, res, parsedUrl);
-				}
+				return routeHandler(req, res, parsedUrl, () => {
+					return handle(req, res, parsedUrl);
+				});
 			} catch (error) {
-				console.log(`⛔ `, `Error occurred handling`, req.url);
+				console.log(`⛔ `, `Error in route:`, parsedUrl.pathname);
 				console.error(error);
 				res.statusCode = 500;
-				res.end("internal server error");
+				res.end("Internal server error");
 			}
 		})
 			.once("error", (error) => {
@@ -51,6 +68,16 @@ app.prepare()
 		process.exit(1);
 	});
 
+process.once("SIGINT", (code) => {
+	console.log(`SIGINT received`);
+	process.exit();
+});
+
+process.once("SIGTERM", (code) => {
+	console.log(`SIGTERM received`);
+	process.exit();
+});
+
 // Some services are written under the ES6 src/ directory. This initializes them once.
 // The service initialization piggybacks off the health check.
 async function initOnce() {
@@ -69,12 +96,58 @@ async function initOnce() {
 	}
 }
 
-process.once("SIGINT", function (code) {
-	console.log(`SIGINT received`);
-	process.exit();
-});
+function isFileAccessible(filePath) {
+	try {
+		// eslint-disable-next-line security/detect-non-literal-fs-filename
+		return fs.lstatSync(filePath).isFile();
+	} catch (error) {
+		return false;
+	}
+}
 
-process.once("SIGTERM", function (code) {
-	console.log(`SIGTERM received`);
-	process.exit();
-});
+function sanitizePath(workingDir, routePath) {
+	if (typeof workingDir !== "string") {
+		throw new Error(`Expected a working directory path string`);
+	}
+
+	if (typeof routePath !== "string") {
+		throw new Error(`Expected a route path string`);
+	}
+
+	const resolvedPath = path.normalize(
+		path.join(
+			workingDir,
+			routePath
+				// Protocol
+				.replace(/^\w+:\/\//, "")
+
+				// Split by path separator
+				.split(/[\\/]/)
+
+				// Remove invalid characters:
+				//   - Decode URI encodings
+				//   - Remove strange characters
+				//   - Trim whitespace
+				//   - Resolve . and ..
+				.map((s) =>
+					path.normalize(
+						decodeURIComponent(s)
+							.replace(/[^a-zA-Z0-9 _,.()-]/g, "")
+							.trim(),
+					),
+				)
+
+				.join("/"),
+		),
+	);
+
+	if (!resolvedPath.startsWith(workingDir)) {
+		console.log(
+			`⛔ `,
+			`Path traversal detected\n       Working Path: ${workingDir}\n      Resolved Path: ${resolvedPath}`,
+		);
+		throw new Error(`Stay in your sandbox like a good kid!`);
+	}
+
+	return resolvedPath;
+}
