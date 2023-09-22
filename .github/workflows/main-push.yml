@@ -16,7 +16,7 @@ on:
 
 jobs:
   Build:
-    uses: ./.github/workflows/_build.yml
+    uses: ./.github/workflows/calls/_build.yml
     secrets: inherit
     permissions:
       actions: read
@@ -26,7 +26,7 @@ jobs:
 
   Push:
     needs: Build
-    uses: ./.github/workflows/_docker-push.yml
+    uses: ./.github/workflows/calls/_docker-push.yml
     secrets: inherit
     permissions:
       actions: read
@@ -34,7 +34,7 @@ jobs:
 
   Rollout:
     needs: Push
-    uses: ./.github/workflows/_k8s-restart.yml
+    uses: ./.github/workflows/calls/_k8s-restart.yml
     secrets: inherit
     permissions:
       actions: read
@@ -42,7 +42,7 @@ jobs:
 
   Trivy:
     needs: Push
-    uses: ./.github/workflows/_trivy.yml
+    uses: ./.github/workflows/calls/_trivy.yml
     secrets: inherit
     permissions:
       actions: read

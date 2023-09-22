@@ -7,7 +7,7 @@ on:
 
 jobs:
   Build:
-    uses: ./.github/workflows/_build.yml
+    uses: ./.github/workflows/calls/_build.yml
     secrets: inherit
     permissions:
       actions: read
@@ -16,7 +16,7 @@ jobs:
       save: false
 
   Review:
-    uses: ./.github/workflows/_dependency-review.yml
+    uses: ./.github/workflows/calls/_dependency-review.yml
     secrets: inherit
     permissions:
       actions: read
@@ -24,7 +24,7 @@ jobs:
       pull-requests: write
 
   CodeQL:
-    uses: ./.github/workflows/_codeql.yml
+    uses: ./.github/workflows/calls/_codeql.yml
     secrets: inherit
     permissions:
       actions: read
