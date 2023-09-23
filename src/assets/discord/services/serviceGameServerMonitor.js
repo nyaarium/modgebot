@@ -280,7 +280,7 @@ function makeEmbedCard(server) {
 		if (lastCheck) {
 			// Set description
 			switch (lastCheck.status) {
-				case STATUS_RUNNING:
+				case STATUS_RUNNING: {
 					let uptime = "";
 					if (lastCheck.uptime) {
 						uptime = `<t:${lastCheck.uptime}:R>`;
@@ -298,6 +298,7 @@ function makeEmbedCard(server) {
 						);
 					}
 					break;
+				}
 				case "starting":
 					desc.push(
 						`**${lastCheck.status.toUpperCase()}** <t:${
@@ -662,19 +663,28 @@ async function pollServers(client) {
 	const WAIT_TIME = 30 * 1000;
 	clearTimeout(timeoutPoll);
 	timeoutPoll = setTimeout(async () => {
+		const checksPassed = {};
+
 		await Promise.all(
 			_.map(appServers, async (server, appId) => {
-				await pollServer(server, appId);
+				try {
+					await pollServer(server, appId);
+					checksPassed[appId] = true;
+				} catch (error) {
+					console.log(`⚠️ `, `Error occurred checking [${appId}]`);
+					console.log(error);
+				}
 			}),
 		);
 
 		// Auto-actions
 		_.map(appServers, async (server, appId) => {
+			if (!checksPassed[appId]) return;
+
 			autoShutdownIfDown(server, appId);
 			autoShutdownIfEmpty(server, appId);
 		});
 
-		// TODO: maybe catch errors the above to prevent interruptions
 		pollServers(client, false);
 	}, WAIT_TIME);
 }
