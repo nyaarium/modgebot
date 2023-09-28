@@ -25,7 +25,6 @@
 		"minor": "npm --no-git-tag-version version minor",
 		"major": "npm --no-git-tag-version version major",
 		"====[ Misc ]====": "",
-		"commit-main": "git push -u origin main:dev && git branch -u origin/main && git reset --hard origin/main # Move new 'main' commits over to new 'dev' branch",
 		"reinstall": "npm run purge && npm i",
 		"update": "npx npm-check-updates -u && npm run reinstall",
 		"clean": "rm -rf .next/",
