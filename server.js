@@ -1,9 +1,7 @@
 const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
-const path = require("path");
-const fs = require("fs");
-const { default: fetch } = require("node-fetch");
+const { default: nodeFetch } = require("node-fetch");
 
 const dev = process.env.NODE_ENV !== "production";
 if (dev) {
@@ -83,7 +81,9 @@ process.once("SIGTERM", (code) => {
 async function initOnce() {
 	try {
 		console.log(` ℹ️ `, `Running first time health-check`);
-		const res = await fetch(`http://localhost:${port}/api/health-check`);
+		const res = await nodeFetch(
+			`http://localhost:${port}/api/health-check`,
+		);
 
 		if (res.status !== 200) {
 			console.log(res.status, res.statusText);
@@ -94,60 +94,4 @@ async function initOnce() {
 		console.error(error);
 		process.exit(1);
 	}
-}
-
-function isFileAccessible(filePath) {
-	try {
-		// eslint-disable-next-line security/detect-non-literal-fs-filename
-		return fs.lstatSync(filePath).isFile();
-	} catch (error) {
-		return false;
-	}
-}
-
-function sanitizePath(workingDir, routePath) {
-	if (typeof workingDir !== "string") {
-		throw new Error(`Expected a working directory path string`);
-	}
-
-	if (typeof routePath !== "string") {
-		throw new Error(`Expected a route path string`);
-	}
-
-	const resolvedPath = path.normalize(
-		path.join(
-			workingDir,
-			routePath
-				// Protocol
-				.replace(/^\w+:\/\//, "")
-
-				// Split by path separator
-				.split(/[\\/]/)
-
-				// Remove invalid characters:
-				//   - Decode URI encodings
-				//   - Remove strange characters
-				//   - Trim whitespace
-				//   - Resolve . and ..
-				.map((s) =>
-					path.normalize(
-						decodeURIComponent(s)
-							.replace(/[^a-zA-Z0-9 _,.()-]/g, "")
-							.trim(),
-					),
-				)
-
-				.join("/"),
-		),
-	);
-
-	if (!resolvedPath.startsWith(workingDir)) {
-		console.log(
-			`⛔ `,
-			`Path traversal detected\n       Working Path: ${workingDir}\n      Resolved Path: ${resolvedPath}`,
-		);
-		throw new Error(`Stay in your sandbox like a good kid!`);
-	}
-
-	return resolvedPath;
 }
