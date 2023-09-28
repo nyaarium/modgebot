@@ -808,7 +808,7 @@ function makeLinodeActions(server, appId) {
 
 		this.lastCheck.status = "migration-queue";
 		this.lastCheck.info = `In queue for migration`;
-		this.lastCheck.uptime = moment().unix();
+		this.lastCheck.lastChangeTimestamp = moment().unix();
 		updateMessage(server, appId);
 
 		await queue;
@@ -816,7 +816,7 @@ function makeLinodeActions(server, appId) {
 
 		this.lastCheck.status = "resizing";
 		this.lastCheck.info = `Server is resizing`;
-		this.lastCheck.uptime = moment().unix();
+		this.lastCheck.lastChangeTimestamp = moment().unix();
 		updateMessage(server, appId);
 
 		await resize;
