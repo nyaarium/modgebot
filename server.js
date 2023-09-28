@@ -1,7 +1,6 @@
 const { createServer } = require("http");
 const { parse } = require("url");
 const next = require("next");
-const { default: nodeFetch } = require("node-fetch");
 
 const dev = process.env.NODE_ENV !== "production";
 if (dev) {
@@ -81,9 +80,7 @@ process.once("SIGTERM", (code) => {
 async function initOnce() {
 	try {
 		console.log(` ℹ️ `, `Running first time health-check`);
-		const res = await nodeFetch(
-			`http://localhost:${port}/api/health-check`,
-		);
+		const res = await fetch(`http://localhost:${port}/api/health-check`);
 
 		if (res.status !== 200) {
 			console.log(res.status, res.statusText);
