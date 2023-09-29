@@ -15,6 +15,9 @@ COPY . .
 
 RUN npx next telemetry disable && npm run build
 
+RUN mkdir -p .next/standalone/.next/
+RUN mv .next/static/ .next/standalone/.next/static/
+
 
 
 FROM node:20-alpine as RUNNER_PACKAGES
@@ -43,4 +46,5 @@ COPY --from=RUNNER_PACKAGES /app/node_modules/ node_modules/
 COPY --from=BUILDER /app/.next/ .next/
 COPY --from=BUILDER /app/server.js .
 
+# CMD cd /app/.next/standalone/ && node server.js
 CMD node server.js
