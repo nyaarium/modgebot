@@ -15,8 +15,8 @@ COPY . .
 
 RUN npx next telemetry disable && npm run build
 
-RUN mkdir -p .next/standalone/.next/
-RUN mv .next/static/ .next/standalone/.next/static/
+# RUN mkdir -p .next/standalone/.next/
+# RUN mv .next/static/ .next/standalone/.next/static/
 
 
 
