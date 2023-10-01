@@ -3,7 +3,6 @@ import {
 	escapeMarkdown,
 	PermissionFlagsBits,
 	SlashCommandBuilder,
-	SnowflakeUtil,
 } from "discord.js";
 import fs from "fs";
 import JSON5 from "json5";
@@ -66,6 +65,117 @@ Hello, ChatGPT. You are going to play the role of another person named Eve. You 
 	Now, always stay in character. Always remember to refer to yourself in first person, as "me" or "I" instead of "Eve".
 `;
 
+const INITIAL_PROMPT_VINTAGE_STORY = `
+## Chemicals in the Vintage Story mod:
+
+Acids:
+- Hydrochloric acid ("Spirit of salt")
+- Sulfuric acid ("Oil of vitriol")
+- Nitric acid ("Spirit of niter")
+- Hydrofluoric acid ("Spirit of fluorite")
+- Aqua regia
+- Acetic acid (glacial; not exactly the same as vinegar)
+- Pyroligneous acid (wood dry distillation product, contains acetic acid and methanol, mostly)
+
+Alkali:
+- Sodium carbonate ("Soda ash")
+- Sodium hydroxide ("Caustic soda")
+- Potassium hydroxide ("Caustic potash")
+- Ammonia
+
+Pure elements:
+- White Phosphorus
+- Red Phosphorus
+- Mercury
+
+Minerals:
+- Calcium acetate
+- Glauber's salt
+- Ammonium chloride ("Sal ammoniac")
+
+Organic compounds:
+- Glycerin
+- Acetone
+- Turpentine
+- Methanol ("Wood spirit")
+- Coal tar
+- Phenolate
+- Phenol
+- Benzene
+- Formaldehyde
+
+Other:
+- Soap
+- Seltzer (carbonated water)
+- Lens (a glass lens)
+
+----
+
+## Known Recipes
+
+Nitric acid:
+- heat ammonia (0.01L) in a boiling flask. The setup should be: boiling flask -> catalyser -> reaction chamber -> dissolver (filled with water)
+- heat sulfuric acid (0.01L) and saltpeter (x1) in a boiling flask. The setup should be: boiling flask -> dissolver (filled with water)
+
+Hydrochloric acid:
+- heat sulfuric acid (0.01L) and salt (x1) in a boiling flask. The setup should be: boiling flask -> dissolver (filled with water)
+
+Hydrofluoric acid:
+- heat sulfuric acid (0.01L) and fluorite (x1) in a boiling flask. The setup should be: boiling flask -> dissolver (filled with water)
+
+Sulfuric acid:
+- heat nitric acid (0.01L) and powdered sulfur (x2) in a boiling flask. The setup should be: boiling flask -> reaction chamber -> dissolver (filled with water)
+- heat powdered sulfur (x1) in a boiling flask. The setup should be: boiling flask -> catalyser -> dissolver (filled with water)
+
+Acetic acid:
+- heat vinegar (0.1L) in a boiling flask. The setup should be: boiling flask -> reflux column.
+
+Ammonia:
+- heat compost (x2) in a boiling flask. The setup should be: boiling flask -> dissolver (filled with water)
+- heat leather (x1) in a boiling flask. The setup should be: boiling flask -> dissolver (filled with water)
+
+Soda ash:
+- heat carbonated ammonia (0.05L) in a boiling flask. The setup should be: boiling flask -> dissolver (filled with brine) You can make carbonated ammonia by mixing 0.05L of seltzer and 0.05L of ammonia in a mixing bowl (from A Culinary Artillery). To recover the ammonia, you can heat 2x sal ammoniac with 0.05L of slaked lime (the setup should be: boiling flask -> dissolver (filled with water))
+
+Coal tar:
+- heat black coal (bituminous) (x1) in a boiling flask. The setup should be: boiling flask -> retort neck (with a bowl)
+
+Pyroligneous acid:
+- heat firewood (x1) in a boiling flask. The setup should be: boiling flask -> reflux column -> condenser -> retort neck (with a bowl)
+
+Acetone:
+- heat calcium acetate (x1) in a boiling flask. The setup should be: boiling flask -> condenser -> retort neck (with a bowl)
+
+Turpentine:
+- heat pine resin (x1) in a boiling flask. The setup should be: boiling flask -> condenser -> retort neck (with a bowl)
+
+Methanol:
+- heat pyroligneous acid (0.2L) in a boiling flask. The setup should be: boiling flask -> reflux column -> condenser -> retort neck (with a bowl)
+
+Formaldehyde:
+- heat methanol (0.01L) in a boiling flask. The setup should be: boiling flask -> catalyser -> dissolver (filled with water)
+
+Glauber's salt:
+- made as a byproduct from the production of hydrochloric acid using sulfuric acid and salt
+
+Red phosphorus:
+- heat white phosphorus (x1) in a boiling flask. The setup should contain only a boiling flask.
+
+Mercury:
+- heat crushed cinnabar (x1) in a boiling flask. The setup should be: boiling flask -> retort neck (with a bowl)
+
+Seltzer:
+- heat vinegar (1L) and lime (x1) in a boiling flask. The setup should be: boiling flask -> dissolver (filled with water)
+- heat acetic acid (0.1L) and lime (x1) in a boiling flask. The setup should be: boiling flask -> dissolver (filled with water)
+
+Calcium acetate:
+- made as a byproduct from the production of seltzer
+
+Sal ammoniac (ammonium chloride):
+- made as a byproduct from the production of soda ash
+`;
+
+// eslint-disable-next-line security/detect-non-literal-regexp
 const REGEX_REJECTED = new RegExp(
 	joinRegExp([
 		`As an AI language model, I don't`,
@@ -90,41 +200,66 @@ const REGEX_REJECTED = new RegExp(
 	"i",
 );
 
-const commandChat = new SlashCommandBuilder()
-	.setName(`chat`)
-	.setDescription(`Chat with an assistant that can answer many questions.`)
-	.setDefaultMemberPermissions(PermissionFlagsBits.SendMessages)
-	.addStringOption((option) =>
-		option
-			.setName("message")
-			.setRequired(true)
-			.setDescription("Ask a question. I can answer many questions."),
-	);
-
-const commandEve = new SlashCommandBuilder()
-	.setName(`eve`)
-	.setDescription(`Eve with a bit more personality.`)
-	.setDefaultMemberPermissions(PermissionFlagsBits.SendMessages)
-	.addStringOption((option) =>
-		option
-			.setName("message")
-			.setRequired(true)
-			.setDescription("Message me anything <3"),
-	);
-
 const commandsOpenAi = [
 	{
-		data: commandChat.toJSON(),
+		data: new SlashCommandBuilder()
+			.setName(`chat`)
+			.setDescription(
+				`Chat with an assistant that can answer many questions.`,
+			)
+			.setDefaultMemberPermissions(PermissionFlagsBits.SendMessages)
+			.addStringOption((option) =>
+				option
+					.setName("message")
+					.setRequired(true)
+					.setDescription(
+						"Ask a question. I can answer many questions.",
+					),
+			)
+			.toJSON(),
 		async execute(client, interaction) {
-			return executeAsChat(client, interaction, {
+			return executeAsGPT4(client, interaction, {
 				temperature: 0.3,
 			});
 		},
 	},
 	{
-		data: commandEve.toJSON(),
+		data: new SlashCommandBuilder()
+			.setName(`eve`)
+			.setDescription(`Eve with a bit more personality.`)
+			.setDefaultMemberPermissions(PermissionFlagsBits.SendMessages)
+			.addStringOption((option) =>
+				option
+					.setName("message")
+					.setRequired(true)
+					.setDescription("Message me anything <3"),
+			)
+			.toJSON(),
 		async execute(client, interaction) {
 			return executeAsEve(client, interaction);
+		},
+	},
+	{
+		data: new SlashCommandBuilder()
+			.setName(`vs`)
+			.setDescription(`Vintage Story helper.`)
+			.setDefaultMemberPermissions(PermissionFlagsBits.SendMessages)
+			.addStringOption((option) =>
+				option
+					.setName("message")
+					.setRequired(true)
+					.setDescription("Vintage Story helper."),
+			)
+			.toJSON(),
+		async execute(client, interaction) {
+			return executeAsCustom(client, interaction, {
+				model: "gpt-3.5-turbo-16k",
+				namespace: "VS",
+				system: [
+					{ role: "system", content: INITIAL_PROMPT_VINTAGE_STORY },
+				],
+				temperature: 0.3,
+			});
 		},
 	},
 ];
@@ -142,7 +277,25 @@ const lastMessagesByNamespace = {
 	EVE: {},
 };
 
-async function executeAsChat(client, interaction, options) {
+async function executeAsCustom(client, interaction, options) {
+	const {
+		model = "gpt-3.5-turbo-16k",
+		namespace,
+		system = [],
+		...openAiOptions
+	} = options;
+
+	return runOpenAI(
+		client,
+		interaction,
+		model,
+		namespace,
+		system,
+		openAiOptions,
+	);
+}
+
+async function executeAsGPT4(client, interaction, options) {
 	return runOpenAI(
 		client,
 		interaction,
@@ -509,7 +662,7 @@ async function historyExport(interaction, namespace) {
 
 	// Sanitize `filename` for writeFileSync & unlinkSync
 	const filename = `history-${removeDiacritics(interaction.user.username)
-		.replace(/[^a-zA-Z0-9_\-]/g, "") // This sanitizes `filename`
+		.replace(/[^a-zA-Z0-9_-]/g, "") // This sanitizes `filename`
 		.toLowerCase()}.json`;
 
 	// eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -629,7 +782,7 @@ function joinRegExp(arr) {
 		.map((s) => {
 			// Escape all symbols
 			// Remember to refer to them with \\
-			s = s.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+			s = s.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 
 			// Create alternatives
 			s = s.replace(/\\./g, "($&|%2e)"); // .
