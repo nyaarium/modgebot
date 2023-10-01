@@ -580,6 +580,8 @@ function pushLastMessages(namespace, userId, role, content) {
 		);
 	}
 
+	lastMessagesByNamespace[namespace] ??= [];
+
 	const lastMessages = lastMessagesByNamespace[namespace];
 
 	if (!lastMessages[userId]) lastMessages[userId] = [];
@@ -604,6 +606,8 @@ function assembleLastMessages(namespace, userId) {
 	}
 
 	const ret = [];
+
+	lastMessagesByNamespace[namespace] ??= [];
 
 	const lastMessages = lastMessagesByNamespace[namespace];
 
