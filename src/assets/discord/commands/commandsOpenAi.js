@@ -272,10 +272,7 @@ const openai = new OpenAI({
 
 const MEMORY_SPAN_MINUTES = 15 * 60; // 15 min
 
-const lastMessagesByNamespace = {
-	CHAT: {},
-	EVE: {},
-};
+const lastMessagesByNamespace = {};
 
 async function executeAsCustom(client, interaction, options) {
 	const {
@@ -406,7 +403,9 @@ async function runOpenAI(
 		if (message[0] === "!") {
 			message = message.substring(1).trim();
 
-			const lastMessages = lastMessagesByNamespace?.[namespace];
+			lastMessagesByNamespace[namespace] ??= [];
+
+			const lastMessages = lastMessagesByNamespace[namespace];
 			const userMessages = lastMessages?.[interaction.user.id] ?? [];
 
 			switch (message.replace(/^([^\s]*)\s.*/s, "$1").toLowerCase()) {
