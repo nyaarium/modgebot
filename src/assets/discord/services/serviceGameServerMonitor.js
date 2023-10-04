@@ -33,7 +33,7 @@ const actionInProgress = {};
 
 export default async function serviceGameServerMonitor(client = new Client()) {
 	// Load app servers config
-	appServers = loadEnvJson("CONFIG_APP_SERVERS");
+	appServers = loadEnvJson("configAppServers.json5");
 
 	if (!appServers) {
 		console.log(`No appServers found. Skipping.`);
