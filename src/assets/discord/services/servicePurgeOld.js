@@ -6,7 +6,7 @@ import { Client } from "discord.js";
 let channelConfigs = null;
 
 export default async function servicePurgeOld(client = new Client()) {
-	channelConfigs = loadEnvJson("CONFIG_PURGE_CHANNELS");
+	channelConfigs = loadEnvJson("configPurgeChannels.json5");
 
 	executePurgeOld(client, true);
 }

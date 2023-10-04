@@ -21,12 +21,17 @@ export default function loadEnvJson(variableName) {
 	}
 
 	try {
-		const ch = parsedConfig[0];
-		if (ch !== "{" && ch !== "[") {
-			parsedConfig = Buffer.from(parsedConfig, "base64").toString("utf8");
-		}
+		// Ends in .json5
+		if (variableName.slice(-6) === ".json5") {
+			const ch = parsedConfig[0];
+			if (ch !== "{" && ch !== "[" && ch !== '"') {
+				parsedConfig = Buffer.from(parsedConfig, "base64").toString(
+					"utf8",
+				);
+			}
 
-		parsedConfig = json5.parse(parsedConfig);
+			parsedConfig = json5.parse(parsedConfig);
+		}
 	} catch (error) {
 		console.log(`⚠️ `, `Failed to parse ${variableName}`);
 		return null;
