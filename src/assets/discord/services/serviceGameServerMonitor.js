@@ -1,5 +1,4 @@
 import fetchJSON from "@/assets/common/fetchJSON";
-import loadEnvJson from "@/assets/common/loadEnvJson";
 import pause from "@/assets/common/pause";
 import getChannel from "@/assets/discord/getChannel";
 import {
@@ -12,6 +11,7 @@ import linodeReboot from "@/assets/linode/linodeReboot";
 import linodeResize from "@/assets/linode/linodeResize";
 import linodeShutdown from "@/assets/linode/linodeShutdown";
 import linodeStatus from "@/assets/linode/linodeStatus";
+import getEnv from "@/assets/server/getEnv";
 import {
 	ActionRowBuilder,
 	ButtonBuilder,
@@ -33,7 +33,7 @@ const actionInProgress = {};
 
 export default async function serviceGameServerMonitor(client = new Client()) {
 	// Load app servers config
-	appServers = loadEnvJson("configAppServers.json5");
+	appServers = getEnv("configAppServers.json5");
 
 	if (!appServers) {
 		console.log(`No appServers found. Skipping.`);

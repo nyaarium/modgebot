@@ -1,12 +1,12 @@
-import loadEnvJson from "@/assets/common/loadEnvJson";
 import pause from "@/assets/common/pause";
 import purgeOld from "@/assets/discord/commands/purgeOld";
+import getEnv from "@/assets/server/getEnv";
 import { Client } from "discord.js";
 
 let channelConfigs = null;
 
 export default async function servicePurgeOld(client = new Client()) {
-	channelConfigs = loadEnvJson("configPurgeChannels.json5");
+	channelConfigs = getEnv("configPurgeChannels.json5");
 
 	executePurgeOld(client, true);
 }
