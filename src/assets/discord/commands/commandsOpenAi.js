@@ -371,7 +371,7 @@ async function executeAsEve(client, interaction, options) {
 	return runOpenAI(
 		client,
 		interaction,
-		"gpt-3.5-turbo-16k",
+		"gpt-4",
 		"EVE",
 		[
 			// Eve personality
@@ -454,6 +454,7 @@ async function runOpenAI(
 			// GPT call
 			const completion = await openai.chat.completions.create({
 				model,
+				max_tokens: 7000,
 				messages: [
 					...prompts,
 					...assembleLastMessages(namespace, interaction.user.id),

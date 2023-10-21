@@ -1,6 +1,13 @@
 import json5 from "json5";
 
-export default function loadEnvJson(variableName) {
+/**
+ * Returns the value of the specified environment variable after parsing it.
+ *
+ * @param {string} variableName - The name of the environment variable to retrieve.
+ *
+ * @returns {*} The parsed value of the environment variable, or null if it is not defined or cannot be parsed.
+ */
+export default function getEnv(variableName) {
 	if (!(variableName in process.env)) {
 		console.log(`⚠️ `, `Missing ${variableName} environment variable`);
 		return null;
