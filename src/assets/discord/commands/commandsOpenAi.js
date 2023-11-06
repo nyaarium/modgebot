@@ -454,7 +454,7 @@ async function runOpenAI(
 			// GPT call
 			const completion = await openai.chat.completions.create({
 				model,
-				max_tokens: 7000,
+				max_tokens: 4096,
 				messages: [
 					...prompts,
 					...assembleLastMessages(namespace, interaction.user.id),
