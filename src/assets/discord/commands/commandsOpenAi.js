@@ -253,7 +253,7 @@ const commandsOpenAi = [
 			.toJSON(),
 		async execute(client, interaction) {
 			return executeAsCustom(client, interaction, {
-				model: "gpt-3.5-turbo-16k",
+				model: "gpt-4-1106-preview",
 				namespace: "VS",
 				system: [
 					{ role: "system", content: INITIAL_PROMPT_VINTAGE_STORY },
@@ -276,7 +276,7 @@ const lastMessagesByNamespace = {};
 
 async function executeAsCustom(client, interaction, options) {
 	const {
-		model = "gpt-3.5-turbo-16k",
+		model = "gpt-4-1106-preview",
 		namespace,
 		system = [],
 		...openAiOptions
@@ -296,7 +296,7 @@ async function executeAsGPT4(client, interaction, options) {
 	return runOpenAI(
 		client,
 		interaction,
-		"gpt-4",
+		"gpt-4-1106-preview",
 		"CHAT",
 		[
 			// Just the text limits
@@ -371,7 +371,7 @@ async function executeAsEve(client, interaction, options) {
 	return runOpenAI(
 		client,
 		interaction,
-		"gpt-4",
+		"gpt-4-1106-preview",
 		"EVE",
 		[
 			// Eve personality
