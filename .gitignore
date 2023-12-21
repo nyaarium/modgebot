@@ -1,14 +1,19 @@
 # Build
-.next/
+/.next/
 
 # Development
 _test/
-.vscode-server/
-.vscode/
-node_modules/
-volumes/
-.env*
-debug.log
+/.env*
+/.swc/
+/.git*
+/.vscode-server/
+/.vscode/
+/compose*.yml
+/coverage/
+/debug.log
+/next-env.d.ts
+/node_modules/
+/volumes/
 
 #### OS
 Thumbs.db
