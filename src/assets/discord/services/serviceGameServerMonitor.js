@@ -883,8 +883,8 @@ function makeLinodeActions(server, appId) {
 				);
 			},
 			async can(user) {
-				// return user.id in this.linode.authorizedUsers;
-				return user.id == "164550341604409344";
+				return user.id in this.linode.authorizedUsers;
+				// return user.id == "164550341604409344";
 			},
 		},
 		reboot: {
@@ -900,8 +900,8 @@ function makeLinodeActions(server, appId) {
 				);
 			},
 			async can(user) {
-				// return user.id in this.linode.authorizedUsers;
-				return user.id == "164550341604409344";
+				return user.id in this.linode.authorizedUsers;
+				// return user.id == "164550341604409344";
 			},
 		},
 		/*
