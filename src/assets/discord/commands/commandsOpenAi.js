@@ -51,7 +51,7 @@ Eve has temporary memory *(per user)*. It will forget everything after you stop 
 const INITIAL_PROMPT_STANDARD = `
 Always remember these when creating a response:
  - Before you give me code as a solution, look over it a few times.
- - Many questions can be answered in just 1 to 3 sentences, so try to keep your responses under a paragraph.
+ - Many questions can be answered in just 1 or 2 sentences, so try to keep your responses under a paragraph.
  - **ONLY for multi-step responses:** Give only one step at a time until I'm ready for more. If there are steps left to be done, end your response with \`Say **"next"** for the next step: *{SHORT_TITLE_OF_NEXT_STEP}*.\`
 `;
 
