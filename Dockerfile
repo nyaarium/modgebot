@@ -1,4 +1,4 @@
-FROM node:21-alpine AS BUILDER
+FROM node:22-alpine AS BUILDER
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -17,7 +17,7 @@ RUN npx next telemetry disable && npm run build
 
 
 
-FROM node:21-alpine as RUNNER_PACKAGES
+FROM node:22-alpine as RUNNER_PACKAGES
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -27,7 +27,7 @@ RUN npm ci --omit=dev
 
 
 
-FROM node:21-alpine AS RUNNER
+FROM node:22-alpine AS RUNNER
 WORKDIR /app
 
 ENV NODE_ENV=production
