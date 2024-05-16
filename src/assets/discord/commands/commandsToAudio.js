@@ -53,22 +53,13 @@ async function executeTTS(client, interaction) {
 		message,
 	});
 
-	try {
-		let content = ``;
-		content += `> <@${interaction.user.id}>\n`;
-		content += `> *${escapeMarkdown(message)}*\n`;
-		await interaction.reply({
-			content,
-			files: [new AttachmentBuilder(audioBuffer, { name: "Speech.ogg" })],
-		});
-	} catch (error) {
-		let content = ``;
-		content += `There was an error processing the TTS request.\n`;
-		content += `> ${error.message}`;
-		await interaction.reply({
-			content,
-		});
-	}
+	let content = ``;
+	content += `> <@${interaction.user.id}>\n`;
+	content += `> *${escapeMarkdown(message)}*\n`;
+	await interaction.editReply({
+		content,
+		files: [new AttachmentBuilder(audioBuffer, { name: "Speech.ogg" })],
+	});
 }
 
 async function runOpenAI({
