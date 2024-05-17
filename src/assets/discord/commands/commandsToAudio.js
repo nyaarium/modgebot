@@ -1,4 +1,4 @@
-import removeDiacritics from "@/assets/common/removeDiacritics";
+import { removeDiacritics } from "@/assets/common/removeDiacritics";
 import {
 	AttachmentBuilder,
 	escapeMarkdown,
@@ -18,7 +18,7 @@ if (!DISCORD_CLIENT_ID) {
 
 const TTS_MODEL = "tts-1-hd";
 const TTS_VOICE = `nova`;
-const TTS_SPEED = 1.0;
+const TTS_SPEED = 0.9;
 
 const commandsOpenAi = [
 	{
@@ -58,7 +58,7 @@ async function executeTTS(client, interaction) {
 	content += `> *${escapeMarkdown(message)}*\n`;
 	await interaction.editReply({
 		content,
-		files: [new AttachmentBuilder(audioBuffer, { name: "Speech.ogg" })],
+		files: [new AttachmentBuilder(audioBuffer, { name: "Response.ogg" })],
 	});
 }
 
@@ -70,7 +70,7 @@ async function runOpenAI({
 }) {
 	try {
 		const audioSample = await openai.audio.speech.create({
-			response_format: "ogg",
+			response_format: "opus",
 			model,
 			voice,
 			speed,
