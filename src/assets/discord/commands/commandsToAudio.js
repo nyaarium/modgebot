@@ -18,7 +18,7 @@ if (!DISCORD_CLIENT_ID) {
 
 const TTS_MODEL = "tts-1-hd";
 const TTS_VOICE = `nova`;
-const TTS_SPEED = 0.9;
+const TTS_SPEED = 1.0;
 
 const commandsOpenAi = [
 	{
