@@ -1,4 +1,4 @@
-import removeDiacritics from "@/assets/common/removeDiacritics";
+import { removeDiacritics } from "@/assets/common/removeDiacritics";
 import {
 	escapeMarkdown,
 	PermissionFlagsBits,

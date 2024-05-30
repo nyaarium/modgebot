@@ -1,5 +1,5 @@
 import asLogTime from "@/assets/server/asLogTime";
-import fetchJSON from "@/assets/server/fetchJSON";
+import { fetchJson } from "@/assets/server/fetchJson";
 import moment from "moment-timezone";
 
 export let lastIpCheckGood = true; // If bad, do not go forward with the next request.
@@ -35,7 +35,7 @@ export default async function ipLookup(ip) {
 
 			try {
 				const url = `https://api.ip2location.io/?key=${process.env.IP2LOCATION_KEY}&ip=${ip}`;
-				const json = await fetchJSON(url);
+				const json = await fetchJson(url);
 
 				lastIpCheckGood = true;
 				lastIpCheckError = "";
