@@ -1,4 +1,4 @@
-import fetchJSON from "@/assets/common/fetchJSON";
+import { fetchJson } from "@/assets/common/fetchJson";
 import pause from "@/assets/common/pause";
 import getChannel from "@/assets/discord/getChannel";
 import {
@@ -771,10 +771,9 @@ function shouldSkipApp(server) {
 async function linodeStatusCheck(server) {
 	let ret;
 
-	const reply = await fetchJSON(server.linode.healthCheckRoute);
-	if (reply.ok) {
-		ret = reply.json;
-	} else {
+	try {
+		ret = await fetchJson(server.linode.healthCheckRoute);
+	} catch (error) {
 		const res = await linodeStatus(
 			server.linode.key,
 			server.linode.linodeId,

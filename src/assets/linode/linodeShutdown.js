@@ -1,4 +1,4 @@
-import fetchJSON from "@/assets/common/fetchJSON";
+import { fetchJson } from "@/assets/common/fetchJson";
 import { STATUS_OFFLINE } from "@/assets/linode/enumLinodeStatuses";
 import linodeWaitReady from "@/assets/linode/linodeWaitReady";
 
@@ -19,7 +19,7 @@ export default async function linodeShutdown(secretKey, linodeId) {
 	if (res.status === STATUS_OFFLINE) return;
 
 	// Do action
-	const reply = await fetchJSON(
+	await fetchJson(
 		`https://api.linode.com/v4/linode/instances/${linodeId}/shutdown`,
 		{},
 		{
@@ -28,14 +28,6 @@ export default async function linodeShutdown(secretKey, linodeId) {
 			},
 		},
 	);
-	if (reply.ok) {
-		await linodeWaitReady(secretKey, linodeId);
-	} else {
-		console.log(`linodeShutdown(`, linodeId, `) ::`, reply.json?.errors);
 
-		const json = reply.json.errors[0];
-		const error = new Error(json.reason);
-		error.json = json;
-		throw error;
-	}
+	await linodeWaitReady(secretKey, linodeId);
 }

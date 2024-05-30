@@ -1,4 +1,4 @@
-import fetchJSON from "@/assets/common/fetchJSON";
+import { fetchJson } from "@/assets/common/fetchJson";
 
 export default async function linodeStatus(secretKey, linodeId) {
 	if (!secretKey) {
@@ -12,7 +12,7 @@ export default async function linodeStatus(secretKey, linodeId) {
 		);
 	}
 
-	const reply = await fetchJSON(
+	const { label, status, type, region, specs } = await fetchJson(
 		`https://api.linode.com/v4/linode/instances/${linodeId}`,
 		undefined,
 		{
@@ -21,15 +21,5 @@ export default async function linodeStatus(secretKey, linodeId) {
 			},
 		},
 	);
-	if (reply.ok) {
-		const { label, status, type, region, specs } = reply.json;
-		return { label, status, type, region, specs };
-	} else {
-		console.log(`linodeStatus(`, linodeId, `) ::`, reply.json?.errors);
-
-		const json = reply.json.errors[0];
-		const error = new Error(json.reason);
-		error.json = json;
-		throw error;
-	}
+	return { label, status, type, region, specs };
 }

@@ -1,4 +1,4 @@
-import fetchJSON from "@/assets/common/fetchJSON";
+import { fetchJson } from "@/assets/common/fetchJson";
 import linodeWaitReady from "@/assets/linode/linodeWaitReady";
 
 export default async function linodeReboot(secretKey, linodeId) {
@@ -17,7 +17,7 @@ export default async function linodeReboot(secretKey, linodeId) {
 	await linodeWaitReady(secretKey, linodeId);
 
 	// Do action
-	const reply = await fetchJSON(
+	await fetchJson(
 		`https://api.linode.com/v4/linode/instances/${linodeId}/reboot`,
 		{},
 		{
@@ -26,14 +26,6 @@ export default async function linodeReboot(secretKey, linodeId) {
 			},
 		},
 	);
-	if (reply.ok) {
-		await linodeWaitReady(secretKey, linodeId);
-	} else {
-		console.log(`linodeReboot(`, linodeId, `) ::`, reply.json?.errors);
 
-		const json = reply.json.errors[0];
-		const error = new Error(json.reason);
-		error.json = json;
-		throw error;
-	}
+	await linodeWaitReady(secretKey, linodeId);
 }
