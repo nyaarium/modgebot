@@ -21,42 +21,70 @@ export default async function linodeResize(secretKey, linodeId, plan) {
 		);
 	}
 
-	console.log(`SECTION 1 - Pre Check`);
+	console.log(`SECTION 1 - Try migration`);
 
-	// Wait if Linode is busy
-	const linodeReturnStatus = await linodeWaitReady(secretKey, linodeId);
+	let retryMigrationCount = 5;
+	while (1) {
+		try {
+			console.log(`Checking status`);
 
-	// Check plan
-	if (linodeReturnStatus.type === plan) {
-		// Already done!
+			// Wait if Linode is busy
+			const linodeReturnStatus = await linodeWaitReady(
+				secretKey,
+				linodeId,
+			);
 
-		console.log(
-			`linodeResize(`,
-			linodeId,
-			`) ::`,
-			`${linodeReturnStatus.status}, Nothing to do! <3`,
-		);
+			// Check plan
+			if (linodeReturnStatus.type === plan) {
+				// Already done!
 
-		return;
+				console.log(
+					`linodeResize(`,
+					linodeId,
+					`) ::`,
+					`${linodeReturnStatus.status}, Nothing to do! <3`,
+				);
+
+				return;
+			}
+
+			console.log(`Start migration`);
+
+			// Try starting migration
+			await fetchJson(
+				`https://api.linode.com/v4/linode/instances/${linodeId}/resize`,
+				{
+					type: plan,
+					allow_auto_disk_resize: false,
+				},
+				{
+					headers: {
+						Authorization: `Bearer ${secretKey}`,
+					},
+				},
+			);
+
+			break;
+		} catch (error) {
+			const reason = error.json?.errors?.[0]?.reason;
+			if (reason && /Linode busy/.test(reason)) {
+				if (0 < retryMigrationCount) {
+					console.log(
+						`${reason} Retrying ${retryMigrationCount} more times.`,
+					);
+
+					retryMigrationCount--;
+					await pause(5000);
+				} else {
+					throw error;
+				}
+			}
+
+			throw error;
+		}
 	}
 
-	console.log(`SECTION 2 - Do migration`);
-
-	// Do migration
-	await fetchJson(
-		`https://api.linode.com/v4/linode/instances/${linodeId}/resize`,
-		{
-			type: plan,
-			allow_auto_disk_resize: false,
-		},
-		{
-			headers: {
-				Authorization: `Bearer ${secretKey}`,
-			},
-		},
-	);
-
-	console.log(`SECTION 3 - Wait until resizing starts`);
+	console.log(`SECTION 2 - Wait until resizing starts`);
 
 	// Wait until resizing starts (up to 10 minute queue)
 	const timeoutDate = moment().add(10, "minutes");
@@ -79,7 +107,7 @@ export default async function linodeResize(secretKey, linodeId, plan) {
 		}
 	}
 
-	console.log(`SECTION 4 - Wait until resizing is done`);
+	console.log(`SECTION 3 - Wait until resizing is done`);
 
 	const linodeNewStatus = await linodeWaitReady(secretKey, linodeId);
 	console.log(
