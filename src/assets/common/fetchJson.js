@@ -158,6 +158,9 @@ export async function fetchJson(url, data, options = {}) {
 			throw new TooManyRequestsError(json.message);
 		}
 
-		throw new Error(json.message ?? JSON.stringify(json));
+		const errorRet = new Error(json.message ?? JSON.stringify(json));
+		errorRet.status = res.status;
+		errorRet.json = json;
+		throw errorRet;
 	}
 }
