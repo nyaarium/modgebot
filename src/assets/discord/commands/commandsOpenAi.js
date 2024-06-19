@@ -232,6 +232,7 @@ const commandsOpenAi = [
 			});
 		},
 	},
+	/* OLD COMMANDS
 	{
 		data: new SlashCommandBuilder()
 			.setName(`eve`)
@@ -271,6 +272,7 @@ const commandsOpenAi = [
 			});
 		},
 	},
+	*/
 ];
 
 export default commandsOpenAi;
