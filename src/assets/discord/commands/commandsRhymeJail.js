@@ -10,6 +10,7 @@ const commandRhymeJail = new SlashCommandBuilder()
 			.setDescription(`The user to put in Rhyme Jail.`)
 			.setRequired(true),
 	);
+
 const commandsRhymeJail = [
 	{
 		data: commandRhymeJail.toJSON(),
