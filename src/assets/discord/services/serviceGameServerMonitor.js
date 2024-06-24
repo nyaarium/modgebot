@@ -565,14 +565,36 @@ async function pollServer(server, appId, postMessage = true) {
 	let changed = false;
 	let res = null;
 	if (server.linode?.healthCheckRoute) {
+		console.log(
+			`[${appId}] Checking game server status: ${server.linode.healthCheckRoute}`,
+		);
 		try {
-			// Check app server
-			res = await Promise.race([
-				linodeStatusCheck(server, server.linode?.healthCheckRoute),
-				pause(5000).then(() => Promise.reject()),
+			const prHealthCheck = linodeHealthCheck(server);
+			await Promise.race([
+				prHealthCheck,
+				pause(5000).then(() => Promise.reject(false)),
 			]);
-		} catch (error) {
-			// Server failed to respond
+
+			try {
+				const resHealthCheck = await prHealthCheck;
+				if (resHealthCheck?.uptime) {
+					res = resHealthCheck;
+					console.log(`[${appId}] Result A - game uptime:`, res);
+				} else {
+					res = await linodeStatusCheck(server);
+					console.log(`[${appId}] Result B - Linode status:`, res);
+				}
+			} catch (error) {
+				// Linode should have responded. This is an unknown error.
+				console.log(
+					`  Result X - Linode error:`,
+					error.status,
+					error.message,
+				);
+			}
+		} catch (_err) {
+			// Health check timed out. Server is down.
+
 			res = {
 				status: "error",
 				uptime: null,
@@ -637,6 +659,8 @@ async function pollServer(server, appId, postMessage = true) {
 					}
 				}
 			}
+
+			console.log(`[${appId}] Result C - Linode down:`, res);
 		}
 
 		// Check if status changed since last run
@@ -768,35 +792,19 @@ function shouldSkipApp(server) {
 	return false;
 }
 
+async function linodeHealthCheck(server) {
+	return await fetchJson(server.linode.healthCheckRoute);
+}
+
 async function linodeStatusCheck(server) {
-	let ret;
+	const res = await linodeStatus(server.linode.key, server.linode.linodeId);
+	server.linode.currentPlan = res.type;
 
-	try {
-		ret = await fetchJson(server.linode.healthCheckRoute);
-	} catch (error) {
-		const res = await linodeStatus(
-			server.linode.key,
-			server.linode.linodeId,
-		);
-		server.linode.currentPlan = res.type;
-
-		ret = {
-			status: res.status ?? "--",
-			uptime: null,
-			players: 0,
-		};
-	}
-
-	// If current plan was never fetched (first load), get it
-	if (!server.linode.currentPlan) {
-		const res = await linodeStatus(
-			server.linode.key,
-			server.linode.linodeId,
-		);
-		server.linode.currentPlan = res.type;
-	}
-
-	return ret;
+	return {
+		status: res.status ?? "--",
+		uptime: null,
+		players: 0,
+	};
 }
 
 function makeLinodeActions(server, appId) {

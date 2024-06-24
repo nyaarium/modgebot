@@ -10,21 +10,17 @@ const commandBroadcastHere = new SlashCommandBuilder()
 			.setDescription(`Message to post as Eve bot.`)
 			.setRequired(true),
 	);
+
 const commandsBroadcastHere = [
 	{
 		data: commandBroadcastHere.toJSON(),
 		async execute(client, interaction) {
-			const channel = interaction.channel;
-
 			const message = interaction.options.get(`message`);
 
-			// Post message to channel
-			await channel.send({
+			// Edit interaction
+			await interaction.editReply({
 				content: message.value,
 			});
-
-			// Remove original message
-			await interaction.deleteReply();
 		},
 	},
 ];
