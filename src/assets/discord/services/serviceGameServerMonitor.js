@@ -918,24 +918,14 @@ async function linodeStatusCheck(server) {
 
 function makeLinodeActions(server, appId) {
 	const performResize = async function (key, id, plan) {
-		const res = await linodeResize(key, id, plan);
-
-		const { queue, migration, resize } = res;
-
-		this.lastCheck.status = "migration-queue";
-		this.lastCheck.info = `In queue for migration`;
-		this.lastChangeTimestamp = moment().unix();
-		await updateMessage(server, appId);
-
-		await queue;
-		await migration;
+		const prResize = linodeResize(key, id, plan);
 
 		this.lastCheck.status = "resizing";
 		this.lastCheck.info = `Server is resizing`;
 		this.lastChangeTimestamp = moment().unix();
 		await updateMessage(server, appId);
 
-		await resize;
+		await prResize;
 
 		await updateMessage(server, appId);
 	};
