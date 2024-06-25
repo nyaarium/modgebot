@@ -1,9 +1,10 @@
 import createPromise from "@/assets/common/createPromise";
+import { handlerMessageCreate } from "@/assets/discord/chat/handlerMessageCreate";
 import commands from "@/assets/discord/commands";
 import { register } from "@/assets/discord/register";
 import services from "@/assets/discord/services";
 import { dispatchAction } from "@/assets/discord/services/serviceGameServerMonitor";
-import { Client, Events, GatewayIntentBits } from "discord.js";
+import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
 import _ from "lodash";
 
 export default async function discordApp() {
@@ -22,7 +23,18 @@ export default async function discordApp() {
 
 	const pr = createPromise();
 
-	const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+	const client = new Client({
+		intents: [
+			GatewayIntentBits.Guilds,
+			GatewayIntentBits.GuildMessages,
+			GatewayIntentBits.GuildMessageReactions,
+			GatewayIntentBits.GuildMessageTyping,
+			GatewayIntentBits.DirectMessages,
+			GatewayIntentBits.DirectMessageReactions,
+			GatewayIntentBits.DirectMessageTyping,
+		],
+		partials: [Partials.Channel],
+	});
 
 	const commandsMap = _.keyBy(commands, "data.name");
 
@@ -41,6 +53,8 @@ export default async function discordApp() {
 			process.exit(1);
 		}
 	});
+
+	client.on(Events.MessageCreate, handlerMessageCreate);
 
 	client.on(Events.InteractionCreate, async (interaction) => {
 		if (!interaction.isChatInputCommand()) return;
