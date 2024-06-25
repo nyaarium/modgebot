@@ -28,6 +28,7 @@ const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID?.trim?.();
 const SERVICE_ID = "appServers";
 
 let appServers = null;
+let userNyaarium = null;
 
 const actionInProgress = {};
 
@@ -56,23 +57,43 @@ export default async function serviceGameServerMonitor(client = new Client()) {
 		}
 	}
 
-	// Cleanup old messages
+	// Disable invalid configurations & initialize posts
 	for (const [appId, server] of Object.entries(appServers)) {
-		if (!server.guildId) {
-			console.log(`[${appId}] Missing guildId. Skipping.`);
-		}
-
-		if (!server.channelName && !server.channelId) {
-			console.log(
-				`[${appId}] Missing channelName & channelId. Skipping.`,
-			);
-		}
-
 		if (!server.title) {
 			console.log(`[${appId}] Missing title. Skipping.`);
+			server.disabled = true;
+			continue;
 		}
 
-		await initializePost(client, appId, server);
+		if (!server.broadcastChannels) {
+			console.log(`[${appId}] Missing broadcastChannels. Skipping.`);
+			server.disabled = true;
+			continue;
+		}
+
+		for (const broadcastChannel of server.broadcastChannels) {
+			const { guildId, channelName, channelId } = broadcastChannel;
+
+			if (broadcastChannel.disabled) continue;
+
+			if (!guildId) {
+				console.log(
+					`[${appId}] Broadcast channel missing guildId. Skipping.`,
+				);
+				broadcastChannel.disabled = true;
+				continue;
+			}
+
+			if (!channelName && !channelId) {
+				console.log(
+					`[${appId}] Broadcast channel missing channelName & channelId. Skipping.`,
+				);
+				broadcastChannel.disabled = true;
+				continue;
+			}
+
+			await initializePost(client, appId, server, broadcastChannel);
+		}
 	}
 
 	// Fetch all server polls
@@ -84,7 +105,7 @@ export default async function serviceGameServerMonitor(client = new Client()) {
 		}),
 	);
 
-	// Start polling loop
+	// No errors. Start the forever polling loop
 	pollServers(client);
 }
 
@@ -107,30 +128,32 @@ export async function dispatchAction(client, interaction, options) {
 	const server = appServers[dispatch.appId];
 
 	try {
-		// Somehow this embed fired from the wrong server/channel. Bail
-		if (server.guildId !== options.guildId) return;
-		if (server.channelId !== options.channelId) return;
-
 		// Block if already busy
 		if (actionInProgress[dispatch.appId]) {
-			return await interaction.reply({
+			await interaction.reply({
 				content: `Action in progress. Please wait.`,
 				ephemeral: true,
 			});
+			return;
 		}
 		actionInProgress[dispatch.appId] = true;
 
 		// Perform action and reply
 		if (server.actions) {
-			const action = server.actions[dispatch.actionId];
+			const actionConfig = server.actions[dispatch.actionId];
 			const user = interaction.user;
 
 			// Check if authorized
-			if (typeof action.can === "function") {
-				const permitted = await action.can.call(server, user);
+			if (typeof actionConfig.can === "function") {
+				const permitted = await actionConfig.can.call(server, user);
 				if (!permitted) {
 					console.log(
-						`[${dispatch.appId}:${dispatch.actionId}] <${user.username}> Not on the server admin list.`,
+						`[${dispatch.appId}:${dispatch.actionId}] <${user.username}> Not on the server user list.`,
+					);
+
+					await dmMe(
+						client,
+						`[${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Not on the user list.`,
 					);
 
 					actionInProgress[dispatch.appId] = false;
@@ -142,7 +165,7 @@ export async function dispatchAction(client, interaction, options) {
 			}
 
 			// Double check if enabled
-			if (await action.disabled.call(server)) {
+			if (await actionConfig.disabled.call(server)) {
 				console.log(
 					`[${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Action is not ready yet.`,
 				);
@@ -162,10 +185,33 @@ export async function dispatchAction(client, interaction, options) {
 				`[${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Action dispatched.`,
 			);
 			await interaction.reply({
-				content: `[${dispatch.appId}] <@${interaction.user.id}> issued ${dispatch.actionId}.`,
+				ephemeral: true,
+				content: `[${dispatch.appId}:${dispatch.actionId}] Action dispatched.`,
 			});
 
-			await action.action.call(server, client, interaction);
+			try {
+				await actionConfig.action.call(server, client, interaction);
+
+				await dmMe(
+					client,
+					`[${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Action dispatched successfully.`,
+				);
+			} catch (error) {
+				const reason =
+					error?.json?.errors?.[0]?.reason ?? error.message;
+				console.log(`⚠️ `, `Error occurred handling action.`);
+				console.log(error);
+
+				await interaction.followUp({
+					ephemeral: true,
+					content: `[${dispatch.appId}:${dispatch.actionId}] Error: ${reason}`,
+				});
+
+				await dmMe(
+					client,
+					`[${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Error: ${reason}\n\`\`\`\n${error.stack}\n\`\`\``,
+				);
+			}
 
 			actionInProgress[dispatch.appId] = false;
 
@@ -178,96 +224,148 @@ export async function dispatchAction(client, interaction, options) {
 
 		console.log(`⚠️ `, `Error occurred handling action`);
 		console.log(error);
+
+		await interaction.reply({
+			ephemeral: true,
+			content: `[${dispatch.appId}:${dispatch.actionId}] Error occurred handling action.`,
+		});
+
+		await dmMe(
+			client,
+			`[${dispatch.appId}:${dispatch.actionId}] Error occurred handling action.\n\`\`\`\n${error.stack}\n\`\`\``,
+		);
 	}
 }
 
-async function initializePost(client, appId, server) {
-	const channel = await getChannel(
-		client,
-		server.guildId,
-		server.channelName || server.channelId,
-	);
+async function dmMe(client, message) {
+	if (!userNyaarium) {
+		userNyaarium = await client.users.fetch("164550341604409344");
+	}
 
+	await userNyaarium.send(message);
+}
+
+async function initializePost(client, appId, server, broadcastChannel) {
+	const { guildId, channelName, channelId, messageId } = broadcastChannel;
+
+	const channel = await getChannel(client, guildId, channelName || channelId);
 	if (!channel) {
 		console.log(
-			`[${appId}] Could not find channel "${server.channelName}". Skipping.`,
+			`[${appId}] Could not find channel "${
+				channelName || channelId
+			}". Skipping.`,
 		);
+		broadcastChannel.disabled = true;
 		return;
 	}
 
-	switch (channel.type) {
-		case ChannelType.AnnouncementThread:
-			console.log(`[${appId}] Channel type: AnnouncementThread`);
-			break;
-		case ChannelType.GuildCategory:
-			console.log(`[${appId}] Channel type: GuildCategory`);
-			console.log(`I don't know what to do with this.`);
-			break;
-		case ChannelType.GuildDirectory:
-			console.log(`[${appId}] Channel type: GuildDirectory`);
-			console.log(`I don't know what to do with this.`);
-			break;
-		case ChannelType.PublicThread:
-			console.log(`[${appId}] Channel type: PublicThread`);
-			break;
-		case ChannelType.PrivateThread:
-			console.log(`[${appId}] Channel type: PrivateThread`);
-			break;
-		case 0:
-			{
-				console.log(`[${appId}] Channel type: TextChannel`);
+	let message = null;
+	if (messageId) {
+		message = await channel.messages.fetch(messageId);
 
-				// TODO: find old message in the past 50.
-				// xxx
+		await message.edit({
+			content: `**Server Information**`,
+		});
+	} else {
+		switch (channel.type) {
+			case ChannelType.AnnouncementThread:
+				console.log(`[${appId}] Channel type: AnnouncementThread`);
+				break;
+			case ChannelType.GuildCategory:
+				console.log(`[${appId}] Channel type: GuildCategory`);
+				console.log(`I don't know what to do with this.`);
+				break;
+			case ChannelType.GuildDirectory:
+				console.log(`[${appId}] Channel type: GuildDirectory`);
+				console.log(`I don't know what to do with this.`);
+				break;
+			case ChannelType.PublicThread:
+				console.log(`[${appId}] Channel type: PublicThread`);
+				break;
+			case ChannelType.PrivateThread:
+				console.log(`[${appId}] Channel type: PrivateThread`);
+				break;
+			case 0:
+				{
+					console.log(`[${appId}] Channel type: TextChannel`);
 
-				// If no recent is found, post a new one
-				server.channelId = channel.id;
-				server.message = await channel.send({
-					content: `test posting in thread.`,
-				});
-			}
-			break;
-		case 15: // New Enum for Forums
-			{
-				console.log(`[${appId}] Channel type: GuildForums`);
+					// TODO: find old message in the past 50.
+					// xxx
 
-				const resThreads = await channel.threads.fetch();
-				const threadChannels = resThreads.threads;
-
-				let threadChannel = threadChannels.find(
-					(thread) => thread.name === server.title,
-				);
-
-				if (!threadChannel) {
-					threadChannel = await channel.threads.create({
-						name: server.title,
-						message: "**Server Information**",
+					// If no recent is found, post a new one
+					// server.channelId = channel.id;
+					message = await channel.send({
+						content: "**Server Information**",
 					});
 				}
+				break;
+			case 15: // New Enum for Forums
+				{
+					console.log(`[${appId}] Channel type: GuildForums`);
 
-				// await threadChannel.send({
-				// 	content: `test posting in thread.`,
-				// });
+					const resThreads = await channel.threads.fetch();
+					const threadChannels = resThreads.threads;
 
-				if (threadChannel.ownerId == DISCORD_CLIENT_ID) {
-					server.channelId = threadChannel.id;
-					server.message = await threadChannel.messages.fetch(
-						threadChannel.id,
+					let threadChannel = threadChannels.find(
+						(thread) => thread.name === server.title,
 					);
+
+					if (!threadChannel) {
+						threadChannel = await channel.threads.create({
+							name: server.title,
+							message: "**Server Information**",
+						});
+					}
+
+					// await threadChannel.send({
+					// 	content: `test posting in thread.`,
+					// });
+
+					if (threadChannel.ownerId == DISCORD_CLIENT_ID) {
+						server.channelId = threadChannel.id;
+						message = await threadChannel.messages.fetch(
+							threadChannel.id,
+						);
+					}
 				}
-			}
-			break;
+				break;
+			default:
+				console.log(`[${appId}] Channel type Unknown: ${channel.type}`);
+		}
+	}
+
+	if (message) {
+		broadcastChannel.message = message;
+	} else {
+		console.log(`[${appId}] Could not initialize post. Skipping.`);
+		broadcastChannel.disabled = true;
 	}
 }
 
 async function updateMessage(server, appId) {
-	const msg = {
-		content: server.message.content,
-		embeds: await makeEmbedCard(server),
-		components: await makeActionsComponent(server, appId),
-	};
+	if (!server.broadcastChannels) return;
 
-	await server.message.edit(msg);
+	for (const broadcastChannel of server.broadcastChannels) {
+		const { message } = broadcastChannel;
+
+		if (broadcastChannel.disabled) continue;
+
+		if (!message) {
+			console.log(
+				`[${appId}] Weird. No message found after initializing it. Skipping.`,
+			);
+			broadcastChannel.disabled = true;
+			continue;
+		}
+
+		const msg = {
+			content: message.content,
+			embeds: await makeEmbedCard(server),
+			components: await makeActionsComponent(server, appId),
+		};
+
+		await message.edit(msg);
+	}
 }
 
 function makeEmbedCard(server) {
@@ -672,11 +770,22 @@ async function pollServer(server, appId, postMessage = true) {
 		server.lastCheck = res;
 
 		if (changed && postMessage) {
-			if (server.message) {
-				// Display updated info
+			if (!server.broadcastChannels) return;
+
+			for (const broadcastChannel of server.broadcastChannels) {
+				const { message } = broadcastChannel;
+
+				if (broadcastChannel.disabled) continue;
+
+				if (!message) {
+					console.log(
+						`[${appId}] Weird. Could not find message after initializing it. Skipping.`,
+					);
+					broadcastChannel.disabled = true;
+					continue;
+				}
+
 				await updateMessage(server, appId);
-			} else {
-				console.log(`Post not found. Skipping render.`);
 			}
 		}
 	}
@@ -786,7 +895,7 @@ async function autoShutdownIfEmpty(server, appId) {
 function shouldSkipApp(server) {
 	if (!server) return true;
 	if (server.disabled) return true;
-	if (!server.guildId) return true;
+	if (!server.broadcastChannels) return true;
 	if (!server.channelId) return true;
 	if (!server.title) return true;
 	return false;
@@ -809,14 +918,14 @@ async function linodeStatusCheck(server) {
 
 function makeLinodeActions(server, appId) {
 	const performResize = async function (key, id, plan) {
-		const res = linodeResize(key, id, plan);
+		const res = await linodeResize(key, id, plan);
 
 		const { queue, migration, resize } = res;
 
 		this.lastCheck.status = "migration-queue";
 		this.lastCheck.info = `In queue for migration`;
 		this.lastChangeTimestamp = moment().unix();
-		updateMessage(server, appId);
+		await updateMessage(server, appId);
 
 		await queue;
 		await migration;
@@ -824,11 +933,11 @@ function makeLinodeActions(server, appId) {
 		this.lastCheck.status = "resizing";
 		this.lastCheck.info = `Server is resizing`;
 		this.lastChangeTimestamp = moment().unix();
-		updateMessage(server, appId);
+		await updateMessage(server, appId);
 
 		await resize;
 
-		updateMessage(server, appId);
+		await updateMessage(server, appId);
 	};
 
 	return {
