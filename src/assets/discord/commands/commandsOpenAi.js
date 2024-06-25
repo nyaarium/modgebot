@@ -1,4 +1,5 @@
 import { removeDiacritics } from "@/assets/common/removeDiacritics";
+import getEnv from "@/assets/server/getEnv";
 import {
 	escapeMarkdown,
 	PermissionFlagsBits,
@@ -10,8 +11,8 @@ import _ from "lodash";
 import moment from "moment-timezone";
 import OpenAI from "openai";
 
-const OPENAI_KEY = process.env.OPENAI_KEY?.trim?.();
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID?.trim?.();
+const OPENAI_KEY = getEnv("OPENAI_KEY")?.trim?.();
+const DISCORD_CLIENT_ID = getEnv("DISCORD_CLIENT_ID")?.trim?.();
 if (!OPENAI_KEY) {
 	throw new Error("Missing OPENAI_KEY environment variable");
 }
