@@ -141,7 +141,7 @@ export async function handlerMessageCreate(discordMessage) {
 		[
 			{
 				role: "system",
-				content: `You are <@${botTag}> having a lovely conversation with <@${author.tag}>. Read the following chat history, and respond with 1 message. Don't prefix the timestamp nor your name header.`,
+				content: `You are <@${botTag}> having a conversation with <@${author.tag}>. Read the following chat history, and respond with 1 message. Don't prefix the timestamp nor your name header.`,
 			},
 			{
 				role: "system",
