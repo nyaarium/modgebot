@@ -108,15 +108,15 @@ export async function handlerMessageCreate(discordMessage) {
 	if (userDMs.lock) return;
 
 	// Check if allowed
-	if (!userDMs.allowed) {
-		// Recheck if allowed
-		await checkUserAllowed(discordMessage, userDMs);
-		if (!userDMs.allowed) {
-			await discordMessage.react("❌");
-			cacheUserDMs.delete(author.id);
-			return;
-		}
-	}
+	// if (!userDMs.allowed) {
+	// 	// Recheck if allowed
+	// 	await checkUserAllowed(discordMessage, userDMs);
+	// 	if (!userDMs.allowed) {
+	// 		await discordMessage.react(`<:Crungo:871532435081424986>`);
+	// 		cacheUserDMs.delete(author.id);
+	// 		return;
+	// 	}
+	// }
 
 	// Concat summary and unsummarized messages
 	let messagesConcat =
