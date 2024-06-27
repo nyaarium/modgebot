@@ -119,7 +119,7 @@ export async function dispatchAction(client, interaction, options) {
 	if (dispatch.serviceId !== SERVICE_ID) return;
 
 	console.log(
-		`Action dispatched:`,
+		`⚙️ Action dispatched:`,
 		interaction.user.username,
 		dispatch.appId,
 		dispatch.actionId,
@@ -130,6 +130,7 @@ export async function dispatchAction(client, interaction, options) {
 	try {
 		// Block if already busy
 		if (actionInProgress[dispatch.appId]) {
+			console.log(`⚙️ Action in progress. Please wait.`);
 			await interaction.reply({
 				content: `Action in progress. Please wait.`,
 				ephemeral: true,
@@ -148,7 +149,7 @@ export async function dispatchAction(client, interaction, options) {
 				const permitted = await actionConfig.can.call(server, user);
 				if (!permitted) {
 					console.log(
-						`[${dispatch.appId}:${dispatch.actionId}] <${user.username}> Not on the server user list.`,
+						`⚙️ [${dispatch.appId}:${dispatch.actionId}] <${user.username}> Not on the server user list.`,
 					);
 
 					await dmMe(
@@ -167,7 +168,7 @@ export async function dispatchAction(client, interaction, options) {
 			// Double check if enabled
 			if (await actionConfig.disabled.call(server)) {
 				console.log(
-					`[${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Action is not ready yet.`,
+					`⚙️ [${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Action is not ready yet.`,
 				);
 
 				actionInProgress[dispatch.appId] = false;
@@ -178,11 +179,14 @@ export async function dispatchAction(client, interaction, options) {
 			}
 
 			// Disable action buttons while action in progress
+			console.log(
+				`⚙️ [${dispatch.appId}:${dispatch.actionId}] Disabling action buttons on posts.`,
+			);
 			await updateMessage(server, dispatch.appId);
 
 			// Do action
 			console.log(
-				`[${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Action dispatched.`,
+				`⚙️ [${dispatch.appId}:${dispatch.actionId}] <${user.tag}> Action dispatched.`,
 			);
 			await interaction.reply({
 				ephemeral: true,
@@ -190,6 +194,9 @@ export async function dispatchAction(client, interaction, options) {
 			});
 
 			try {
+				console.log(
+					`⚙️ [${dispatch.appId}:${dispatch.actionId}] Running action.`,
+				);
 				await actionConfig.action.call(server, client, interaction);
 
 				await dmMe(
@@ -199,7 +206,7 @@ export async function dispatchAction(client, interaction, options) {
 			} catch (error) {
 				const reason =
 					error?.json?.errors?.[0]?.reason ?? error.message;
-				console.log(`⚠️ `, `Error occurred handling action.`);
+				console.log(`⚙️ ⚠️ `, `Error occurred handling action.`);
 				console.log(error);
 
 				await interaction.followUp({
@@ -216,13 +223,16 @@ export async function dispatchAction(client, interaction, options) {
 			actionInProgress[dispatch.appId] = false;
 
 			// Enable action buttons
+			console.log(
+				`⚙️ [${dispatch.appId}:${dispatch.actionId}] Enabling action buttons.`,
+			);
 			await updateMessage(server, dispatch.appId);
 		}
 	} catch (error) {
 		// Enable action buttons when errored
 		actionInProgress[dispatch.appId] = false;
 
-		console.log(`⚠️ `, `Error occurred handling action`);
+		console.log(`⚙️ ⚠️ `, `Error occurred handling action`);
 		console.log(error);
 
 		await interaction.reply({
@@ -806,6 +816,11 @@ async function pollServers(client) {
 				} catch (error) {
 					console.log(`⚠️ `, `Error occurred checking [${appId}]`);
 					console.log(error);
+
+					await dmMe(
+						client,
+						`[${appId}] Error occurred checking server.\n\`\`\`\n${error.stack}\n\`\`\``,
+					);
 				}
 			}),
 		);
