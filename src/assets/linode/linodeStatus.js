@@ -19,6 +19,7 @@ export default async function linodeStatus(secretKey, linodeId) {
 			headers: {
 				Authorization: `Bearer ${secretKey}`,
 			},
+			retry: 3,
 		},
 	);
 	return { label, status, type, region, specs };
