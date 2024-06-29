@@ -55,7 +55,20 @@ export async function fetchJson(url, data, options = {}) {
 		);
 	}
 
-	const { accessToken, clientId, ...otherOptions } = options;
+	const { accessToken, clientId, retry, ...otherOptions } = options;
+
+	if (retry) {
+		if (!Number.isInteger(retry)) {
+			throw new TypeError(
+				`fetchJson(url, data?, options?) : Optional 'retry' must be an integer.`,
+			);
+		}
+		if (retry < 0) {
+			throw new TypeError(
+				`fetchJson(url, data?, options?) : Optional 'retry' must be 0 or greater.`,
+			);
+		}
+	}
 
 	const asForm = !!otherOptions?.form;
 
@@ -119,7 +132,30 @@ export async function fetchJson(url, data, options = {}) {
 		otherOptions.headers["Client-ID"] = clientId;
 	}
 
-	const res = await fetch(url, fetchData);
+	const BACK_OFF = 10000;
+	let res;
+	if (retry) {
+		for (let i = 0; i < retry; i++) {
+			const delay = 10000 + i * BACK_OFF;
+			try {
+				res = await fetch(url, fetchData);
+				break;
+			} catch (error) {
+				if (
+					error.name === "AbortError" ||
+					error.name === "ConnectTimeoutError" ||
+					error.name === "SocketError"
+				) {
+					if (i === retry - 1) throw error;
+					await new Promise((resolve) => setTimeout(resolve, delay));
+				} else {
+					throw error;
+				}
+			}
+		}
+	} else {
+		res = await fetch(url, fetchData);
+	}
 
 	let json;
 	try {
