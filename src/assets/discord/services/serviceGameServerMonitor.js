@@ -808,22 +808,22 @@ async function pollServers(client) {
 	timeoutPoll = setTimeout(async () => {
 		const checksPassed = {};
 
-		await Promise.all(
-			_.map(appServers, async (server, appId) => {
-				try {
-					await pollServer(server, appId);
-					checksPassed[appId] = true;
-				} catch (error) {
-					console.log(`⚠️ `, `Error occurred checking [${appId}]`);
-					console.log(error);
+		for (const [appId, server] of Object.entries(appServers)) {
+			if (shouldSkipApp(server)) continue;
 
-					await dmMe(
-						client,
-						`[${appId}] Error occurred checking server.\n\`\`\`\n${error.stack}\n\`\`\``,
-					);
-				}
-			}),
-		);
+			try {
+				await pollServer(server, appId);
+				checksPassed[appId] = true;
+			} catch (error) {
+				console.log(`⚠️ `, `Error occurred checking [${appId}]`);
+				console.log(error);
+
+				dmMe(
+					client,
+					`[${appId}] Error occurred checking server.\n\`\`\`\n${error.stack}\n\`\`\``,
+				);
+			}
+		}
 
 		// Auto-actions
 		_.map(appServers, async (server, appId) => {
