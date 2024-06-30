@@ -132,7 +132,7 @@ export async function fetchJson(url, data, options = {}) {
 		otherOptions.headers["Client-ID"] = clientId;
 	}
 
-	const BACK_OFF = 10000;
+	const BACK_OFF = 30000;
 	let res;
 	if (retry) {
 		for (let i = 0; i < retry; i++) {

@@ -758,7 +758,9 @@ async function pollServer(server, appId, postMessage = true) {
 								`⚠️ `,
 								`Linode error occurred checking server`,
 							);
-							console.log(error);
+
+							console.log(appId, server, error);
+
 							res = {
 								status: "error",
 								uptime: null,
