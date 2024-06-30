@@ -921,7 +921,7 @@ async function linodeHealthCheck(server) {
 }
 
 async function linodeStatusCheck(server) {
-	const res = await linodeStatus(server.linode.key, server.linode.linodeId);
+	const res = await linodeStatus(server.linode.key, server.linode.id);
 	server.linode.currentPlan = res.type;
 
 	return {
