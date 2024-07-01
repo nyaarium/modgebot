@@ -863,6 +863,15 @@ async function autoShutdownIfEmpty(server, appId) {
 
 	const chk = () => {
 		const lc = server?.lastCheck;
+
+		console.log(`
+			lc: ${JSON.stringify(lc)}
+			typeof: ${typeof server.linode?.autoShutdown}
+			action: ${typeof server.actions?.shutdown?.action}
+			status: ${lc?.status}
+			players: ${lc?.info?.players}
+		`);
+
 		if (typeof server.linode?.autoShutdown !== "number") return false;
 		if (!server.actions?.shutdown?.action) return false;
 		if (lc?.status !== STATUS_RUNNING) return false;
