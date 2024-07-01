@@ -828,12 +828,13 @@ async function pollServers(client) {
 		}
 
 		// Auto-actions
-		_.map(appServers, async (server, appId) => {
+		for (const [appId, server] of Object.entries(appServers)) {
 			if (!checksPassed[appId]) return;
+			console.log(`Checking if server needs to be shutdown`);
 
 			autoShutdownIfDown(server, appId);
 			autoShutdownIfEmpty(server, appId);
-		});
+		}
 
 		pollServers(client, false);
 	}, WAIT_TIME);
