@@ -939,7 +939,7 @@ async function linodeStatusCheck(server) {
 	return {
 		status: res.status ?? "--",
 		uptime: null,
-		players: 0,
+		info: null,
 	};
 }
 
